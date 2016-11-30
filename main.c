@@ -18,13 +18,12 @@
 #include "bit.h"
 #include "usart_ATmega1284.h"
 
-void requestControlVectors(bool rumble){
-    
-}
+unsigned short matrixG[8], matrixR[8];
 
 //requests Controller vectors
 enum ReqState {REQ_INIT, REQ_WAIT} reqState;
-
+unsigned long long ds3Vector;
+unsigned short snesVector;
 void reqInit(){
 	reqState = REQ_INIT;
 }
@@ -33,10 +32,52 @@ void reqTick(){
 	//Actions
 	switch(reqState){
 		case REQ_INIT:
-		
+		    ds3Vector = 0;
+            snesVector = 0;
 		break;
         
         case REQ_WAIT:
+            ;
+            //send request for controller vectors
+            unsigned char rumble = GetBit(PIND, 7) << 7;
+            USART_Send(1 | rumble, 1);
+            while(!USART_HasTransmitted(1));
+            PORTA = 0xFF;
+            //construct ds3Vector
+            unsigned char i;
+            for(i = 0; i < 8 ; i++){
+                ds3Vector <<= 8;
+                ds3Vector |= USART_Receive(1);
+            }
+            
+            unsigned char snesHigh = USART_Receive(1);
+            unsigned char snesLow = USART_Receive(1);
+            snesVector = (snesHigh << 8) | snesLow;
+            
+            //unsigned short buttonVector = ds3Vector & 0xFFFF;
+            //for(i = 0; i < 8; i++){
+            //    matrixR[i] = buttonVector;
+            //    matrixG[i] = buttonVector;
+            //}
+            //
+            ////send LED Matrix push request
+            //USART_Send(2, 1);
+            //while(!USART_HasTransmitted(1));
+            //
+            ////wait for the console to be ready
+            //unsigned char dummy = USART_Receive(1);
+            //
+            ////push red LEDMatrix
+            //for(i = 0; i < 8; i++){
+            //    USART_Send(matrixR[i], 1);
+            //}
+            //
+            ////push green LEDMatrix
+            //for(i = 0; i < 8; i++){
+            //    USART_Send(matrixG[i], 1);
+            //}
+            //while(!USART_HasTransmitted(1));
+            
         break;
         
 		default:
@@ -75,13 +116,14 @@ void StartReq(unsigned portBASE_TYPE Priority)
  
 int main(void) 
 { 
+   DDRA = 0xFF; PORTA = 0x00;
+   DDRD = 0x00; PORTD = 0xFF;
    
    initUSART(1);
    
    //wait for bluetooth to synch
-   while(!USART_HasReceived(1));
-   USART_Flush(1);
-   
+   unsigned char dummy = USART_Receive(1);
+
    //Start Tasks  
    StartReq(1);
     //RunSchedular 
