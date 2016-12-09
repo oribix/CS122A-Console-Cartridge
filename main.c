@@ -35,6 +35,16 @@ void requestControllers(){
     while(!USART_HasTransmitted(1));
 }
 
+void sendMatrix(unsigned short *matrix, unsigned char size){
+    unsigned char i;
+    for(i = 0; i < size; i++){
+        unsigned char highByte = matrix[i] >> 8;
+        unsigned char  lowByte = matrix[i] & 0xFF;
+        USART_Send(highByte, 1);
+        USART_Send(lowByte, 1);
+    }
+}
+
 //requests Controller vectors
 enum ReqState {REQ_INIT, REQ_WAIT} reqState;
 unsigned long long ds3Vector;
@@ -69,32 +79,26 @@ void reqTick(){
             unsigned char snesLow = USART_Receive(1);
             snesVector = (snesHigh << 8) | snesLow;
             
-            PORTC = (ds3Vector >> 8) & 0xFF;
+            unsigned short buttonVector = ds3Vector & 0xFFFF;
+            for(i = 0; i < 8; i++){
+                matrixR[i] = buttonVector;
+                matrixG[i] = buttonVector;
+            }
             
-            //unsigned short buttonVector = ds3Vector & 0xFFFF;
-            //for(i = 0; i < 8; i++){
-            //    matrixR[i] = buttonVector;
-            //    matrixG[i] = buttonVector;
-            //}
-            //
-            ////send LED Matrix push request
-            //USART_Send(2, 1);
-            //while(!USART_HasTransmitted(1));
-            //
-            ////wait for the console to be ready
-            //unsigned char dummy = USART_Receive(1);
-            //
-            ////push red LEDMatrix
-            //for(i = 0; i < 8; i++){
-            //    USART_Send(matrixR[i], 1);
-            //}
-            //
+            //send LED Matrix push request
+            USART_Send(MTRXREQ, 1);
+            while(!USART_HasTransmitted(1));
+            
+            //wait for the console to be ready
+            USART_Receive(1);
+            
+            //push red LEDMatrix
+            sendMatrix(matrixR, 8);
+            
             ////push green LEDMatrix
-            //for(i = 0; i < 8; i++){
-            //    USART_Send(matrixG[i], 1);
-            //}
-            //while(!USART_HasTransmitted(1));
+            sendMatrix(matrixG, 8);
             
+            while(!USART_HasTransmitted(1));
         break;
         
 		default:
