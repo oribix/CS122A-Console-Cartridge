@@ -65,11 +65,11 @@ void reqTick(){
                 ds3Vector |= USART_Receive(1);
             }
             
-            PORTC = (ds3Vector >> 8) & 0xFF;
+            unsigned char snesHigh = USART_Receive(1);
+            unsigned char snesLow = USART_Receive(1);
+            snesVector = (snesHigh << 8) | snesLow;
             
-            //unsigned char snesHigh = USART_Receive(1);
-            //unsigned char snesLow = USART_Receive(1);
-            //snesVector = (snesHigh << 8) | snesLow;
+            PORTC = (ds3Vector >> 8) & 0xFF;
             
             //unsigned short buttonVector = ds3Vector & 0xFFFF;
             //for(i = 0; i < 8; i++){
