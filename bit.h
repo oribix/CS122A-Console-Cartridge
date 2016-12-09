@@ -47,4 +47,10 @@ void pulse10(volatile uint8_t *port, unsigned char number){
     *port = SetBit(*port, number, 0);
 }
 
+//returns button state (0 = not pressed, 1 = pressed)
+//assumes the button is grounded upon being pressed
+unsigned char getButton(unsigned char pin, unsigned char number){
+    return GetBit(pin, number) ? 0 : 1;
+}
+
 #endif //BIT_H
