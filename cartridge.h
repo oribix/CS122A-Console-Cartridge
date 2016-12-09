@@ -34,20 +34,24 @@
 
 #define CARTRIDGE_TICK_DELAY 50
 
+//These are the variables you want to modify
 unsigned short matrixG[8], matrixR[8];
+unsigned long long ds3Vector;
+unsigned short snesVector;
+bool rumble;
 
 //opens a request for the controller vectors
 //also signals ds3 to rumble or not
-void requestControllers(unsigned char rumble){
+void requestControllers(bool rumble){
     //create request bit vector
-    unsigned char r = rumble << 7;
-    unsigned char request = CTRLREQ | r;
+    unsigned char request = CTRLREQ | (rumble << 7);
     
     //send request for controller vectors
     USART_Send(request, 1);
     while(!USART_HasTransmitted(1));
 }
 
+//sends matrix Data over USART to the console
 void sendMatrix(unsigned short *matrix, unsigned char size){
     unsigned char i;
     for(i = 0; i < size; i++){
@@ -60,9 +64,6 @@ void sendMatrix(unsigned short *matrix, unsigned char size){
 
 //requests Controller vectors
 enum ReqState {REQ_INIT, REQ_WAIT} reqState;
-unsigned long long ds3Vector;
-unsigned short snesVector;
-unsigned char rumble;
 
 void reqInit(){
     reqState = REQ_INIT;
@@ -78,7 +79,6 @@ void reqTick(){
         break;
         
         case REQ_WAIT:
-        rumble = getButton(PIND, 7);
         requestControllers(rumble);
         
         //construct 8 byte ds3Vector
@@ -93,13 +93,6 @@ void reqTick(){
         unsigned char snesHigh = USART_Receive(1);
         unsigned char snesLow = USART_Receive(1);
         snesVector = (snesHigh << 8) | snesLow;
-        
-        //sets the matrix to the last 16 bits of ds3Vector
-        unsigned short buttonVector = ds3Vector & 0xFFFF;
-        for(i = 0; i < 8; i++){
-            matrixR[i] = buttonVector;
-            matrixG[i] = buttonVector;
-        }
         
         //send LED Matrix push request
         USART_Send(MTRXREQ, 1);
