@@ -18,12 +18,29 @@
 #include "bit.h"
 #include "usart_ATmega1284.h"
 
+#define CTRLREQ 1
+#define MTRXREQ 2
+
 unsigned short matrixG[8], matrixR[8];
+
+//opens a request for the controller vectors
+//also signals ds3 to rumble or not
+void requestControllers(){
+    //create request bit vector
+    unsigned char rumble = getButton(PIND, 7) << 7;
+    unsigned char request = CTRLREQ | rumble;
+    
+    //send request for controller vectors
+    USART_Send(request, 1);
+    while(!USART_HasTransmitted(1));
+}
 
 //requests Controller vectors
 enum ReqState {REQ_INIT, REQ_WAIT} reqState;
 unsigned long long ds3Vector;
 unsigned short snesVector;
+unsigned char rumble;
+
 void reqInit(){
 	reqState = REQ_INIT;
 }
@@ -34,25 +51,26 @@ void reqTick(){
 		case REQ_INIT:
 		    ds3Vector = 0;
             snesVector = 0;
+            rumble = 0;
 		break;
         
         case REQ_WAIT:
-            ;
-            //send request for controller vectors
-            unsigned char rumble = GetBit(PIND, 7) << 7;
-            USART_Send(1 | rumble, 1);
-            while(!USART_HasTransmitted(1));
-            PORTA = 0xFF;
-            //construct ds3Vector
-            unsigned char i;
-            for(i = 0; i < 8 ; i++){
-                ds3Vector <<= 8;
-                ds3Vector |= USART_Receive(1);
-            }
+            requestControllers();
+            //receive response
+            PORTC = USART_Receive(1);
             
-            unsigned char snesHigh = USART_Receive(1);
-            unsigned char snesLow = USART_Receive(1);
-            snesVector = (snesHigh << 8) | snesLow;
+            ////construct 8 byte ds3Vector
+            //unsigned char i;
+            //for(i = 0; i < 8 ; i++){
+                //ds3Vector <<= 8;
+                //ds3Vector |= USART_Receive(1);
+            //}
+            //
+            //PORTC = ds3Vector & 0xFF;
+            
+            //unsigned char snesHigh = USART_Receive(1);
+            //unsigned char snesLow = USART_Receive(1);
+            //snesVector = (snesHigh << 8) | snesLow;
             
             //unsigned short buttonVector = ds3Vector & 0xFFFF;
             //for(i = 0; i < 8; i++){
@@ -114,20 +132,17 @@ void StartReq(unsigned portBASE_TYPE Priority)
 	xTaskCreate(reqTask, (signed portCHAR *)"reqTask", configMINIMAL_STACK_SIZE, NULL, Priority, NULL );
 }	
  
-int main(void) 
-{ 
-   DDRA = 0xFF; PORTA = 0x00;
-   DDRD = 0x00; PORTD = 0xFF;
-   
-   initUSART(1);
-   
-   //wait for bluetooth to synch
-   unsigned char dummy = USART_Receive(1);
-
-   //Start Tasks  
-   StartReq(1);
-    //RunSchedular 
-   vTaskStartScheduler(); 
- 
-   return 0; 
+int main(void)
+{
+    DDRC = 0xFF; PORTC = 0x00;
+    DDRD = 0x00; PORTD = 0xFF;
+    
+    initUSART(1);
+    
+    //Start Tasks
+    StartReq(1);
+    //RunSchedular
+    vTaskStartScheduler();
+    
+    return 0;
 }
