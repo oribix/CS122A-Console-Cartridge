@@ -56,17 +56,16 @@ void reqTick(){
         
         case REQ_WAIT:
             requestControllers();
-            //receive response
-            PORTC = USART_Receive(1);
             
-            ////construct 8 byte ds3Vector
-            //unsigned char i;
-            //for(i = 0; i < 8 ; i++){
-                //ds3Vector <<= 8;
-                //ds3Vector |= USART_Receive(1);
-            //}
-            //
-            //PORTC = ds3Vector & 0xFF;
+            //construct 8 byte ds3Vector
+            ds3Vector = 0;
+            unsigned char i;
+            for(i = 0; i < 8 ; i++){
+                ds3Vector <<= 8;
+                ds3Vector |= USART_Receive(1);
+            }
+            
+            PORTC = (ds3Vector >> 8) & 0xFF;
             
             //unsigned char snesHigh = USART_Receive(1);
             //unsigned char snesLow = USART_Receive(1);
