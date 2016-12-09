@@ -15,135 +15,16 @@
 #include "task.h" 
 #include "croutine.h" 
 
-#include "bit.h"
-#include "usart_ATmega1284.h"
+#include "cartridge.h"
 
-#define CTRLREQ 1
-#define MTRXREQ 2
-
-unsigned short matrixG[8], matrixR[8];
-
-//opens a request for the controller vectors
-//also signals ds3 to rumble or not
-void requestControllers(){
-    //create request bit vector
-    unsigned char rumble = getButton(PIND, 7) << 7;
-    unsigned char request = CTRLREQ | rumble;
-    
-    //send request for controller vectors
-    USART_Send(request, 1);
-    while(!USART_HasTransmitted(1));
-}
-
-void sendMatrix(unsigned short *matrix, unsigned char size){
-    unsigned char i;
-    for(i = 0; i < size; i++){
-        unsigned char highByte = matrix[i] >> 8;
-        unsigned char  lowByte = matrix[i] & 0xFF;
-        USART_Send(highByte, 1);
-        USART_Send(lowByte, 1);
-    }
-}
-
-//requests Controller vectors
-enum ReqState {REQ_INIT, REQ_WAIT} reqState;
-unsigned long long ds3Vector;
-unsigned short snesVector;
-unsigned char rumble;
-
-void reqInit(){
-	reqState = REQ_INIT;
-}
-
-void reqTick(){
-	//Actions
-	switch(reqState){
-		case REQ_INIT:
-		    ds3Vector = 0;
-            snesVector = 0;
-            rumble = 0;
-		break;
-        
-        case REQ_WAIT:
-            requestControllers();
-            
-            //construct 8 byte ds3Vector
-            ds3Vector = 0;
-            unsigned char i;
-            for(i = 0; i < 8 ; i++){
-                ds3Vector <<= 8;
-                ds3Vector |= USART_Receive(1);
-            }
-            
-            unsigned char snesHigh = USART_Receive(1);
-            unsigned char snesLow = USART_Receive(1);
-            snesVector = (snesHigh << 8) | snesLow;
-            
-            unsigned short buttonVector = ds3Vector & 0xFFFF;
-            for(i = 0; i < 8; i++){
-                matrixR[i] = buttonVector;
-                matrixG[i] = buttonVector;
-            }
-            
-            //send LED Matrix push request
-            USART_Send(MTRXREQ, 1);
-            while(!USART_HasTransmitted(1));
-            
-            //wait for the console to be ready
-            USART_Receive(1);
-            
-            //push red LEDMatrix
-            sendMatrix(matrixR, 8);
-            
-            ////push green LEDMatrix
-            sendMatrix(matrixG, 8);
-            
-            while(!USART_HasTransmitted(1));
-        break;
-        
-		default:
-		
-		break;
-	}
-	//Transitions
-	switch(reqState){
-		case REQ_INIT:
-			reqState = REQ_WAIT;
-		break;
-        
-        case REQ_WAIT:
-        break;
-        
-		default:
-			reqState = REQ_INIT;
-		break;
-	}
-}
-
-void reqTask()
-{
-	reqInit();
-   for(;;) 
-   { 	
-	reqTick();
-	vTaskDelay(50); 
-   } 
-}
-
-void StartReq(unsigned portBASE_TYPE Priority)
-{
-	xTaskCreate(reqTask, (signed portCHAR *)"reqTask", configMINIMAL_STACK_SIZE, NULL, Priority, NULL );
-}	
- 
 int main(void)
 {
-    DDRC = 0xFF; PORTC = 0x00;
-    DDRD = 0x00; PORTD = 0xFF;
-    
-    initUSART(1);
+    DDRC = 0xFF; PORTC = 0x00; //used for debugging
+    DDRD = 0x00; PORTD = 0xFF; //used for rumble button
     
     //Start Tasks
-    StartReq(1);
+    StartCartridge(1);
+    
     //RunSchedular
     vTaskStartScheduler();
     
