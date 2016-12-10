@@ -3,7 +3,9 @@ This is an API to create cartridges for the console.
 This is built on [FreeRTOS](http://www.freertos.org/).
 
 The cartridge is for the [DS3 clone console](https://github.com/oribix/CS122A-Console).
-See the [Google Doc]() for more details on how this works.
+See the [Google Doc](https://drive.google.com/open?id=0B5K5OUHJGcLmLTlsRlRZWVctNUk) for more details on how this works.
+
+[Video Demonstration]()
 
 ##How do I use this?
 ###To Start
@@ -11,7 +13,7 @@ You only need 2 lines of code to start:
 
 `#include "cartridge.h"` and `StartCartridge(<priority>)`
 
-note that the priority must be set to the lowest out of all the tasks in your FreeRTOS system.
+Note that the priority must be set to the lowest out of all the tasks in your FreeRTOS system.
 Failure to to do this will cause output bugs.
 
 See main.c for an example.
