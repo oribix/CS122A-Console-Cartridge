@@ -2,14 +2,17 @@
 This is an API to create cartridges for the console.
 This is built on [FreeRTOS](http://www.freertos.org/).
 
-See the [console](https://github.com/oribix/CS122A-Console)
-and [Google Doc]() for more details on how this works.
+The cartridge is for the [DS3 clone console](https://github.com/oribix/CS122A-Console).
+See the [Google Doc]() for more details on how this works.
 
 ##How do I use this?
 ###To Start
 You only need 2 lines of code to start:
 
 `#include "cartridge.h"` and `StartCartridge(<priority>)`
+
+note that the priority must be set to the lowest out of all the tasks in your FreeRTOS system.
+Failure to to do this will cause output bugs.
 
 See main.c for an example.
 
@@ -31,7 +34,7 @@ For example:
 This turns on all of the fourth row's green LEDs.
 `matrixR` can be used in a similar fashion.
 
-See for main.c an example.
+See main.c for an example.
 
 ####Getting Controller inputs
 The API automatically fethes controller inputs and stores them in `ds3Vector` and `snesVector`.
@@ -63,3 +66,28 @@ The DS3 will vibrate until you set to to `false`
 `rumble  = false;//ends vibration`
 
 See main.c for an example.
+
+##File Descriptions
+
+###cartridge.h
+This holds all the code for the cartridge API.
+See the "How do I use this" section for details on its use.
+
+###main.c
+This is an example of the cartridge API being used.
+
+###bit.h
+Binary manipulation helper functions.
+
+###usart_ATmega1284.h
+This is a driver for the ATMEGA1284's USART communication.
+
+###FreeRTOS Files
+- croutine.c
+- heap_1.c
+- list.c
+- port.c
+- queue.c
+- tasks.c
+- timer.h
+- timers.c
