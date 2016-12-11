@@ -5,7 +5,7 @@ This is built on [FreeRTOS](http://www.freertos.org/).
 The cartridge is for the [DS3 clone console](https://github.com/oribix/CS122A-Console).
 See the [Google Doc](https://drive.google.com/open?id=0B5K5OUHJGcLmLTlsRlRZWVctNUk) for more details on how this works.
 
-[Video Demonstration]()
+[Video Demonstration](https://www.youtube.com/watch?v=FelWu7re3BA)
 
 ##How do I use this?
 ###To Start
